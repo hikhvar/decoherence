@@ -2,6 +2,7 @@ package store
 
 import (
 	"os"
+	"reflect"
 	"time"
 )
 
@@ -19,6 +20,18 @@ type FileInfo struct {
 	FileMode     os.FileMode `json:"file_mode"`
 	ModTime      time.Time   `json:"mod_time"`
 	Size         int64       `json:"size"`
+}
+
+func (f *FileInfo) Fields() (fields []string) {
+	s := reflect.ValueOf(f).Elem().Type()
+	for i := 0; i < s.NumField(); i++ {
+		fields = append(fields, s.Field(i).Name)
+	}
+	return fields
+}
+
+func (f *FileInfo) ValueOf(fieldName string) interface{} {
+	return reflect.ValueOf(f).Elem().FieldByName(fieldName).Interface()
 }
 
 // SetTo sets the values of f to those of other, of they are not the null-values

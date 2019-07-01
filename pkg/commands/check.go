@@ -10,6 +10,7 @@ import (
 const (
 	expectedStoreFlagName = "expected"
 	gotStoreFlagName      = "got"
+	csvFlagName           = "csv"
 )
 
 func NewCompareCommand() cli.Command {
@@ -27,7 +28,7 @@ func NewCompareCommand() cli.Command {
 			}
 			// TODO: Check metadata
 			res := store.ComputeDiffs(expected.Files(), got.Files())
-			fmt.Printf("%+v\n", res)
+			fmt.Println(res.Render(c.Bool(csvFlagName)))
 			return nil
 		},
 		Flags: []cli.Flag{
@@ -37,6 +38,9 @@ func NewCompareCommand() cli.Command {
 			},
 			cli.StringFlag{
 				Name: gotStoreFlagName,
+			},
+			cli.BoolFlag{
+				Name: csvFlagName,
 			},
 		},
 	}

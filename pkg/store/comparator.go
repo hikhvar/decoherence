@@ -1,5 +1,9 @@
 package store
 
+import (
+	"github.com/jedib0t/go-pretty/table"
+)
+
 type compareResult struct {
 	foundOther bool
 	equalOther bool
@@ -11,10 +15,47 @@ type diff struct {
 	got      FileInfo
 }
 
+func (d diff) Rows() (rows []table.Row) {
+	fields := d.got.Fields()
+	path := d.got.RelativePath
+	if path == "" {
+		path = d.expected.RelativePath
+	}
+	for _, name := range fields {
+		if d.expected.ValueOf(name) != d.got.ValueOf(name) {
+			rows = append(rows, table.Row{path, name, d.expected.ValueOf(name), d.got.ValueOf(name)})
+		}
+	}
+	return rows
+}
+
 type Result struct {
 	missingInNew []diff
 	missingInOld []diff
 	notEqual     []diff
+}
+
+func (r Result) render(csv bool) string {
+	t := table.NewWriter()
+	t.AppendHeader(table.Row{"Path", "Attribute", "Expected", "Got"})
+	for _, d := range r.notEqual {
+		t.AppendRows(d.Rows())
+	}
+	for _, d := range r.missingInNew {
+		t.AppendRow(table.Row{d.expected.RelativePath, "present", true, false})
+	}
+	for _, d := range r.missingInOld {
+		t.AppendRow(table.Row{d.expected.RelativePath, "present", false, true})
+	}
+	if csv {
+		return t.RenderCSV()
+	}
+	return t.Render()
+
+}
+
+func (r Result) Render(csv bool) string {
+	return r.render(csv)
 }
 
 func ComputeDiffs(old, new []FileInfo) Result {
