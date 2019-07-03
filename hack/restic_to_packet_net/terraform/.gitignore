@@ -1,0 +1,4 @@
+input.auto.tfvars
+scripts/env.conf
+*tfstate*
+.terraform
