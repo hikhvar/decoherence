@@ -116,7 +116,7 @@ func worker(done *sync.WaitGroup, s Store, backlog chan store.FileInfo, errorCha
 		}
 		fNew, err := ExtractFileInfo(extractors, rootPath, fPath, info)
 		if err != nil {
-			errorChan <- errors.Wrapf(err, "could not run parallel extractors on file &s", fPath)
+			errorChan <- errors.Wrapf(err, "could not run parallel extractors on file %s", fPath)
 			continue
 		}
 		f.SetTo(fNew)
