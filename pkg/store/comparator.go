@@ -45,7 +45,7 @@ func (r Result) render(csv bool) string {
 		t.AppendRow(table.Row{d.expected.RelativePath, "present", true, false})
 	}
 	for _, d := range r.missingInOld {
-		t.AppendRow(table.Row{d.expected.RelativePath, "present", false, true})
+		t.AppendRow(table.Row{d.got.RelativePath, "present", false, true})
 	}
 	if csv {
 		return t.RenderCSV()
@@ -78,7 +78,7 @@ func ComputeDiffs(old, new []FileInfo, on ...EqualCriteria) Result {
 		}
 		if !found {
 			r.missingInOld = append(r.missingInOld, diff{
-				expected: finfo,
+				got: finfo,
 			})
 		}
 	}
