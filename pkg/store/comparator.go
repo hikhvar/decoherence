@@ -22,8 +22,8 @@ func (d diff) Rows() (rows []table.Row) {
 		path = d.expected.RelativePath
 	}
 	for _, name := range fields {
-		if d.expected.ValueOf(name) != d.got.ValueOf(name) {
-			rows = append(rows, table.Row{path, name, d.expected.ValueOf(name), d.got.ValueOf(name)})
+		if d.expected.MustValueOf(name) != d.got.MustValueOf(name) {
+			rows = append(rows, table.Row{path, name, d.expected.MustValueOf(name), d.got.MustValueOf(name)})
 		}
 	}
 	return rows
@@ -58,7 +58,7 @@ func (r Result) Render(csv bool) string {
 	return r.render(csv)
 }
 
-func ComputeDiffs(old, new []FileInfo) Result {
+func ComputeDiffs(old, new []FileInfo, on ...EqualCriteria) Result {
 	oldMap := make(map[string]compareResult)
 	newMap := make(map[string]compareResult)
 	r := Result{}
@@ -73,7 +73,7 @@ func ComputeDiffs(old, new []FileInfo) Result {
 		oldItem, found := oldMap[finfo.RelativePath]
 		newMap[finfo.RelativePath] = compareResult{
 			foundOther: found,
-			equalOther: finfo.Equals(&oldItem.info),
+			equalOther: finfo.Equals(&oldItem.info, on...),
 			info:       finfo,
 		}
 		if !found {
@@ -86,7 +86,7 @@ func ComputeDiffs(old, new []FileInfo) Result {
 		newItem, found := newMap[path]
 		oldMap[path] = compareResult{
 			foundOther: found,
-			equalOther: value.info.Equals(&newItem.info),
+			equalOther: value.info.Equals(&newItem.info, on...),
 			info:       value.info,
 		}
 		if !found {
