@@ -17,6 +17,7 @@ func (c *Checksum) Extract(path string, info os.FileInfo) (store.FileInfo, error
 	if err != nil {
 		return store.FileInfo{}, errors.Wrap(err, "failed to open file to compute checksum")
 	}
+	defer f.Close()
 
 	h := sha256.New()
 	if _, err := io.Copy(h, f); err != nil {
