@@ -53,6 +53,9 @@ func (j *JSON) Append(f ...FileInfo) error {
 }
 
 func (j *JSON) Close() error {
+	if j == nil {
+		return nil
+	}
 	j.lock.Lock()
 	defer j.lock.Unlock()
 	err := json.NewEncoder(j.file).Encode(j.content)
