@@ -20,7 +20,7 @@ export SNAPSHOT=${SNAPSHOT}
 EOF
 
 scp -i ${SSH_KEY} env.conf root@${IP}:/root/env.conf
-ssh -i ${SSH_KEY} root@${IP}  /root/restore_restic.sh
+ssh -i ${SSH_KEY} root@${IP} /root/restore_restic.sh
 
 ssh -i ${SSH_KEY} /root/decoherence record --store /root/result.json --path /data/restore/${SNAPSHOT}/input
 scp -i ${SSH_KEY} root@${IP}:/root/result.json .
