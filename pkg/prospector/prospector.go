@@ -1,20 +1,23 @@
 package prospector
 
 import (
-	"fmt"
-	"github.com/briandowns/spinner"
 	"github.com/hikhvar/decoherence/pkg/store"
 	"github.com/pkg/errors"
 	"os"
 	"path"
 	"path/filepath"
-	"strings"
 	"sync"
-	"time"
 )
 
 type Store interface {
 	Append(info ...store.FileInfo) error
+}
+
+type ProgressTracker interface {
+	Store
+	Finish()
+	StartTreeWalk()
+	EndTreeWalk(foundFiles int)
 }
 
 type Extractor interface {
@@ -27,6 +30,7 @@ type Prospector struct {
 	store              Store
 	rootPath           string
 	files              []store.FileInfo
+	progressTracker    ProgressTracker
 	inplaceExtractors  []Extractor
 	parallelExtractors []Extractor
 	maxParallel        int
@@ -43,6 +47,7 @@ func NewProspector(path string, maxParallel int, store Store, extractors []Extra
 	}
 	return &Prospector{
 		rootPath:           path,
+		progressTracker:    NewProgressBarStore(store),
 		store:              store,
 		maxParallel:        maxParallel,
 		inplaceExtractors:  inplace,
@@ -51,12 +56,12 @@ func NewProspector(path string, maxParallel int, store Store, extractors []Extra
 }
 
 func (p *Prospector) Run() error {
-	s := startSpinner()
+	p.progressTracker.StartTreeWalk()
 	err := filepath.Walk(p.rootPath, p.walkFunc)
 	if err != nil {
 		return errors.Wrap(err, "initial prospector run failed")
 	}
-	s.Stop()
+	p.progressTracker.EndTreeWalk(len(p.files))
 	if len(p.parallelExtractors) < 1 {
 		return errors.Wrap(p.store.Append(p.files...), "failed to append files")
 	}
@@ -64,12 +69,10 @@ func (p *Prospector) Run() error {
 	doneChan := make(chan struct{})
 	errorChan := make(chan error)
 	backlog := make(chan store.FileInfo, p.maxParallel*100)
-	fmt.Println("...")
-	progressStore := NewProgressBarStore(len(p.files), p.store)
-	defer progressStore.bar.Finish()
+	defer p.progressTracker.Finish()
 	for i := 0; i < p.maxParallel; i++ {
 		done.Add(1)
-		go worker(&done, progressStore, backlog, errorChan, p.parallelExtractors, p.rootPath)
+		go worker(&done, p.progressTracker, backlog, errorChan, p.parallelExtractors, p.rootPath)
 	}
 	go func() {
 		for _, f := range p.files {
@@ -125,41 +128,4 @@ func worker(done *sync.WaitGroup, s Store, backlog chan store.FileInfo, errorCha
 			errorChan <- errors.Wrapf(err, "failed to append file %s to store", fPath)
 		}
 	}
-}
-
-func startSpinner() *spinner.Spinner {
-	s := spinner.New(spinner.CharSets[36], 100*time.Millisecond) // Build our new spinner
-	s.Writer = os.Stderr
-	s.Suffix = " Reading files"
-	s.FinalMSG = "Read all files, start parallel"
-	mustNotError(s.Color("red"))
-	s.Start()
-	return s
-}
-
-func mustNotError(err error) {
-	if err != nil {
-		panic("This error must not happen since the error condition is checked at compile time.: " + err.Error())
-	}
-}
-
-func NewMultiError(errs []error) *MultiError {
-	if len(errs) > 0 {
-		return &MultiError{
-			errors: errs,
-		}
-	}
-	return nil
-}
-
-type MultiError struct {
-	errors []error
-}
-
-func (m *MultiError) Error() string {
-	var errs []string
-	for _, err := range m.errors {
-		errs = append(errs, err.Error())
-	}
-	return strings.Join(errs, ";")
 }
