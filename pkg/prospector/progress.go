@@ -18,9 +18,8 @@ type progressBarStore struct {
 	output  io.Writer
 }
 
-func NewProgressBarStore(s Store) *progressBarStore {
+func NewProgressBarStore() *progressBarStore {
 	return &progressBarStore{
-		store:  s,
 		output: os.Stderr,
 	}
 }
@@ -31,6 +30,11 @@ func (p *progressBarStore) Append(finfo ...store.FileInfo) error {
 	}
 	defer p.bar.Add(len(finfo))
 	return p.store.Append(finfo...)
+}
+
+func (p *progressBarStore) Wrap(s Store) Store {
+	p.store = s
+	return p
 }
 
 func (p *progressBarStore) Finish() {

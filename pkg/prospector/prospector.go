@@ -14,7 +14,7 @@ type Store interface {
 }
 
 type ProgressTracker interface {
-	Store
+	Wrap(s Store) Store
 	Finish()
 	StartTreeWalk()
 	EndTreeWalk(foundFiles int)
@@ -47,7 +47,7 @@ func NewProspector(path string, maxParallel int, store Store, extractors []Extra
 	}
 	return &Prospector{
 		rootPath:           path,
-		progressTracker:    NewProgressBarStore(store),
+		progressTracker:    NewProgressBarStore(),
 		store:              store,
 		maxParallel:        maxParallel,
 		inplaceExtractors:  inplace,
@@ -65,14 +65,15 @@ func (p *Prospector) Run() error {
 	if len(p.parallelExtractors) < 1 {
 		return errors.Wrap(p.store.Append(p.files...), "failed to append files")
 	}
+	p.store = p.progressTracker.Wrap(p.store)
+	defer p.progressTracker.Finish()
 	var done sync.WaitGroup
 	doneChan := make(chan struct{})
 	errorChan := make(chan error)
 	backlog := make(chan store.FileInfo, p.maxParallel*100)
-	defer p.progressTracker.Finish()
 	for i := 0; i < p.maxParallel; i++ {
 		done.Add(1)
-		go worker(&done, p.progressTracker, backlog, errorChan, p.parallelExtractors, p.rootPath)
+		go worker(&done, p.store, backlog, errorChan, p.parallelExtractors, p.rootPath)
 	}
 	go func() {
 		for _, f := range p.files {

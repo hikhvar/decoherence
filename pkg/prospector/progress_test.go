@@ -19,14 +19,14 @@ func (t *testStore) Append(info ...store.FileInfo) error {
 
 func TestNewProgress(t *testing.T) {
 	ts := &testStore{}
-	p := NewProgressBarStore(ts)
+	p := NewProgressBarStore()
 	buf := bytes.NewBuffer(nil)
 	p.output = buf
 	p.StartTreeWalk()
 	time.Sleep(100 * time.Millisecond)
 	assert.True(t, buf.Len() > 1)
 	buf.Reset()
-	err := p.Append(store.FileInfo{})
+	err := p.Wrap(ts).Append(store.FileInfo{})
 	assert.NotNil(t, err)
 	p.EndTreeWalk(10)
 	assert.True(t, buf.Len() > 1)
