@@ -7,6 +7,11 @@ import (
 	"path/filepath"
 )
 
+// ExtractFileInfo applies the given extractors on the file specified by path.
+// root is the starting directory for the record run.
+// Already known facts about the file are given by info.
+// If either any extractor returns an error, or path is not relative to root, an error is returned
+// In case of an error the returned store.FileInfo may be inconsistent
 func ExtractFileInfo(extractors []Extractor, root, path string, info os.FileInfo) (store.FileInfo, error) {
 	relPath, err := filepath.Rel(root, path)
 	if err != nil {

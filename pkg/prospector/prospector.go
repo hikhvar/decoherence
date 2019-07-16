@@ -97,7 +97,7 @@ func (p *Prospector) Run() error {
 }
 
 func (p *Prospector) walkFunc(path string, info os.FileInfo, err error) error {
-	if info.IsDir() || !info.Mode().IsRegular() {
+	if err != nil || info == nil || info.IsDir() || !info.Mode().IsRegular() {
 		return nil
 		// TODO: Figure out how to handle directories and irregular files
 	}
